@@ -40,7 +40,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Register successfully")
 		fmt.Fprintln(w, usrInfo.Name)
 		fmt.Println(usrInfo.Name, "has registered")
-		fmt.Println(usrInfo.Pwd, "has registered")
 	} else {
 		fmt.Fprintln(w, "Username has been occupied")
 	}
@@ -50,10 +49,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	usrInfo := getusr(r)
 
 	if _db[usrInfo.Name].Pwd == usrInfo.Pwd {
-		fmt.Println(usrInfo.Name, "logging in")
-		fmt.Println(usrInfo.Pwd)
-		fmt.Println(_db[usrInfo.Name].Pwd)
-		fmt.Println(_db[usrInfo.Name].Pwd == usrInfo.Pwd)
 		cookie, err := r.Cookie(usrInfo.Name)
 		if cookie == nil && err != nil {
 			rand.Seed(time.Now().UnixNano())
