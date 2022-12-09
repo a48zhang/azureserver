@@ -19,13 +19,13 @@ type User struct {
 }
 
 // Return User's Info from HTTP Body
-func getUsr(r *http.Request) (User, error) {
+func getusr(r *http.Request) User {
 	len := r.ContentLength
 	info := make([]byte, len)
-	_, err := r.Body.Read(info)
+	r.Body.Read(info)
 	var usrInfo User
 	json.Unmarshal(info, &usrInfo)
-	return usrInfo, err
+	return usrInfo
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -33,26 +33,27 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	usrInfo, err := getUsr(r)
-	if err != nil {
-		return
-	}
+	usrInfo := getusr(r)
 
 	if _, ok := _db[usrInfo.Name]; !ok {
 		_db[usrInfo.Name] = usrInfo
 		fmt.Fprintln(w, "Register successfully")
 		fmt.Fprintln(w, usrInfo.Name)
+		fmt.Println(usrInfo.Name, "has registered")
+		fmt.Println(usrInfo.Pwd, "has registered")
 	} else {
 		fmt.Fprintln(w, "Username has been occupied")
 	}
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	usrInfo, err := getUsr(r)
-	if err != nil {
-		return
-	}
+	usrInfo := getusr(r)
+
 	if _db[usrInfo.Name].Pwd == usrInfo.Pwd {
+		fmt.Println(usrInfo.Name, "logging in")
+		fmt.Println(usrInfo.Pwd)
+		fmt.Println(_db[usrInfo.Name].Pwd)
+		fmt.Println(_db[usrInfo.Name].Pwd == usrInfo.Pwd)
 		cookie, err := r.Cookie(usrInfo.Name)
 		if cookie == nil && err != nil {
 			rand.Seed(time.Now().UnixNano())
@@ -76,12 +77,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Wrong Username or Password")
 	}
 }
-
 func ListInfo(w http.ResponseWriter, r *http.Request) {
-	usrInfo, err := getUsr(r)
-	if err != nil {
-		return
-	}
+	usrInfo := getusr(r)
+
 	cookie, err := r.Cookie(usrInfo.Name)
 	if cookie.Value == _db[usrInfo.Name].cookie.Value && err == nil {
 		usrInfo = _db[cookie.Name]
@@ -92,12 +90,9 @@ func ListInfo(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Please login\n")
 	}
 }
-
 func ChInfo(w http.ResponseWriter, r *http.Request) {
-	usrInfo, err := getUsr(r)
-	if err != nil {
-		return
-	}
+	usrInfo := getusr(r)
+
 	cookie, err := r.Cookie(usrInfo.Name)
 	if cookie.Value == _db[usrInfo.Name].cookie.Value && err == nil {
 		fmt.Fprintf(w, "Welcome,%s\n", usrInfo.Name)
@@ -110,10 +105,8 @@ func ChInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func ChPwd(w http.ResponseWriter, r *http.Request) {
-	usrInfo, err := getUsr(r)
-	if err != nil {
-		return
-	}
+	usrInfo := getusr(r)
+
 	cookie, err := r.Cookie(usrInfo.Name)
 	if cookie.Value == _db[usrInfo.Name].cookie.Value && err == nil {
 		fmt.Fprintf(w, "Welcome,%s\n", usrInfo.Name)
