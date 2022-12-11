@@ -7,6 +7,10 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	_ "github.com/microsoft/go-mssqldb"
+	"context"
+	"database/sql"
+	"log"
 )
 
 var _db map[string]User
@@ -16,6 +20,32 @@ type User struct {
 	Nickname string
 	Pwd      string
 	cookie   http.Cookie
+}
+
+//Open MySQL Database
+var db *sql.DB
+
+func openDB() {
+	var server = "azuredbvlad.database.windows.net"
+	var port = 1433
+	var user = "vlad"
+	var password = "Windows@azure"
+	var database = "test"
+	// Build connection string
+	connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s;",
+		server, user, password, port, database)
+	var err error
+	// Create connection pool
+	db, err = sql.Open("sqlserver", connString)
+	if err != nil {
+		log.Fatal("Error creating connection pool: ", err.Error())
+	}
+	ctx := context.Background()
+	err = db.PingContext(ctx)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	fmt.Printf("Connected!")
 }
 
 // Return User's Info from HTTP Body
@@ -121,6 +151,7 @@ func main() {
 	http.HandleFunc("/user", ListInfo)
 	http.HandleFunc("/user/changeInfo", ChInfo)
 	http.HandleFunc("/user/changePwd", ChPwd)
+	openDB()
 	fmt.Println("Server online")
 	http.ListenAndServe(":9090", nil)
 }
