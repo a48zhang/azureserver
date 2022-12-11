@@ -26,10 +26,10 @@ type User struct {
 var db *sql.DB
 
 func openDB() {
-	var server = "azuredbvlad.database.windows.net"
+	var server = ""
 	var port = 1433
-	var user = "vlad"
-	var password = "Windows@azure"
+	var user = ""
+	var password = ""
 	var database = "test"
 	// Build connection string
 	connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s;",
