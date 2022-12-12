@@ -1,43 +1,22 @@
 package main
 
 import (
-	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
-	_ "github.com/microsoft/go-mssqldb"
+	"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 )
-
-var db *sql.DB
-
-func openDB() {
-	var server = ""
-	var port = 1433
-	var user = ""
-	var password = ""
-	var database = "test"
-	// Build connection string
-	connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s;",
-		server, user, password, port, database)
-	var err error
-	// Create connection pool
-	db, err = sql.Open("sqlserver", connString)
-	if err != nil {
-		log.Fatal("Error creating connection pool: ", err.Error())
-	}
-	ctx := context.Background()
-	err = db.PingContext(ctx)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	fmt.Printf("Connected!")
-}
 
 var session map[string]string
 
@@ -46,6 +25,55 @@ type User struct {
 	Name     string
 	Pwd      string
 	Nickname string
+}
+
+var db *sql.DB
+
+type loginCert struct {
+	User     string `json:"user"`
+	Password string `json:"password"`
+	Server   string `json:"server"`
+	Port     string `json:"port"`
+	Database string `json:"database"`
+}
+
+func openDB() {
+	//Configuation
+
+	//TLS
+	rootCertPool := x509.NewCertPool()
+	pem, err := os.ReadFile("cert/DigiCertGlobalRootCA.crt.pem")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		log.Fatal("Failed to append PEM.")
+	}
+	clientCert := make([]tls.Certificate, 0, 1)
+	tlsCfg := tls.Config{
+		RootCAs:      rootCertPool,
+		Certificates: clientCert,
+	}
+	mysql.RegisterTLSConfig("custom", &tlsCfg)
+
+	//MySQL
+	cfg, _ := os.Open("./cert/config.json")
+	var cert loginCert
+	info, _ := io.ReadAll(cfg)
+	json.Unmarshal(info, &cert)
+
+	// Connection
+	mysqlUrl := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=custom",
+		cert.User, cert.Password, cert.Server, cert.Port, cert.Database)
+	db, err = sql.Open("mysql", mysqlUrl)
+	if err != nil {
+		log.Fatal("Error creating connection pool: ", err.Error())
+	}
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	fmt.Printf("Connected!")
 }
 
 // Return User's Info from HTTP Body
